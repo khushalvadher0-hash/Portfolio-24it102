@@ -1,0 +1,111 @@
+/* Styles for the overall app container */
+.app-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+/* Header component styles */
+.header-container {
+  background-color: #0056b3; /* Blue header background */
+  color: #ffffff;
+  padding: 40px 20px;
+  text-align: center;
+  border-bottom: 4px solid #004085;
+}
+
+/* About component styles */
+.about-section {
+  padding: 30px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dddddd;
+}
+
+.about-section h3 {
+  margin-bottom: 15px;
+  color: #0056b3;
+}
+
+/* Skills component styles */
+.skills-section {
+  padding: 30px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dddddd;
+}
+
+.skills-section h3 {
+  margin-bottom: 15px;
+  color: #0056b3;
+}
+
+.skills-section ul {
+  list-style-type: square;
+  padding-left: 20px;
+}
+
+.skills-section li {
+  margin-bottom: 8px;
+  font-size: 1.1rem;
+}
+
+/* Projects component styles */
+.projects-section {
+  padding: 30px 20px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #dddddd;
+}
+
+.projects-section h3 {
+  margin-bottom: 20px;
+  color: #0056b3;
+}
+
+/* Projects Grid using Flexbox */
+.projects-grid {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap; /* Wrap cards on smaller screens */
+}
+
+/* Project Card styles */
+.project-card {
+  background-color: #f8f9fa; /* Light gray cards */
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 20px;
+  flex: 1 1 calc(33.333% - 20px); /* 3 cards side by side on desktop */
+  min-width: 250px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease; /* Card hover transitions */
+}
+
+/* Project Card hover effect */
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+  border-color: #0056b3;
+}
+
+.project-card h4 {
+  margin-bottom: 10px;
+  color: #333333;
+}
+
+.project-card p {
+  color: #666666;
+  font-size: 0.95rem;
+}
+
+/* Footer component styles */
+.footer-container {
+  background-color: #343a40; /* Dark gray footer for a clean cutoff */
+  color: #ffffff;
+  padding: 20px;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.footer-container p {
+  margin: 5px 0;
+}
