@@ -5,6 +5,39 @@
   padding: 0;
 }
 
+/* Navbar styles */
+.navbar {
+  background-color: #0056b3; /* Blue Navbar background */
+  color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+}
+
+.navbar-logo {
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.navbar-links {
+  display: flex;
+  gap: 15px;
+}
+
+.nav-link {
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: rgba(255, 255, 255, 0.2); /* Basic hover effect */
+}
+
 /* Header component styles */
 .header-container {
   background-color: #0056b3; /* Blue header background */
@@ -12,6 +45,13 @@
   padding: 40px 20px;
   text-align: center;
   border-bottom: 4px solid #004085;
+}
+
+/* Page titles */
+.page-heading {
+  margin: 20px 0;
+  color: #0056b3;
+  text-align: center;
 }
 
 /* About component styles */
@@ -97,13 +137,104 @@
   font-size: 0.95rem;
 }
 
+/* Contact page styles */
+.contact-page {
+  padding: 20px;
+}
+
+.contact-card {
+  background-color: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 30px;
+  max-width: 500px;
+  margin: 0 auto 30px;
+}
+
+.contact-card label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.contact-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.typed-output, .char-count, .help-text {
+  margin-bottom: 15px;
+  font-size: 1.1rem;
+}
+
+.help-btn {
+  background-color: #0056b3;
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 15px;
+}
+
+.help-btn:hover {
+  background-color: #004085;
+}
+
+.help-text {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 10px;
+  border: 1px solid #ffeeba;
+  border-radius: 4px;
+  font-size: 0.95rem;
+}
+
+/* NotFound styles */
+.notfound-container {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.notfound-code {
+  font-size: 5rem;
+  color: #0056b3;
+  margin-bottom: 10px;
+}
+
+.notfound-message {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+.home-btn {
+  display: inline-block;
+  background-color: #0056b3;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+.home-btn:hover {
+  background-color: #004085;
+}
+
 /* Footer component styles */
 .footer-container {
-  background-color: #343a40; /* Dark gray footer for a clean cutoff */
+  background-color: #343a40; /* Dark gray footer */
   color: #ffffff;
   padding: 20px;
   text-align: center;
   font-size: 0.9rem;
+  margin-top: 30px;
 }
 
 .footer-container p {
