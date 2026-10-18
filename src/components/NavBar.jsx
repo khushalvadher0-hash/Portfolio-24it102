@@ -1,72 +1,81 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { NavLink, Link } from 'react-router-dom';
 
-function NavBar() {
-  const [activeSection, setActiveSection] = useState('home');
+function NavBar({ isDarkMode, onToggleTheme }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
-    { id: 'home', label: 'Home' },
-    { id: 'about', label: 'About' },
-    { id: 'skills', label: 'Skills' },
-    { id: 'projects', label: 'Projects' },
-    { id: 'contact', label: 'Contact' },
-  ];
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 120;
-      for (const link of navLinks) {
-        const section = document.getElementById(link.id);
-        if (section) {
-          const top = section.offsetTop;
-          const height = section.offsetHeight;
-          if (scrollPosition >= top && scrollPosition < top + height) {
-            setActiveSection(link.id);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handleLinkClick = (id) => {
-    setActiveSection(id);
+  const closeMobileMenu = () => {
     setMobileMenuOpen(false);
   };
 
   return (
     <nav className="portfolio-nav">
       <div className="nav-container">
-        <a href="#home" className="nav-brand">
+        <Link to="/" className="nav-brand" onClick={closeMobileMenu}>
           DevPortfolio<span className="brand-dot">.</span>
-        </a>
+        </Link>
 
-        <button
-          className="nav-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle navigation menu"
-          aria-expanded={mobileMenuOpen}
-        >
-          <span className="hamburger-bar"></span>
-          <span className="hamburger-bar"></span>
-          <span className="hamburger-bar"></span>
-        </button>
+        <div className="nav-right-cluster">
+          {/* Theme Toggle Button (Light / Dark Mode) */}
+          <button
+            type="button"
+            className="theme-toggle-btn"
+            onClick={onToggleTheme}
+            aria-label="Toggle color theme"
+            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {isDarkMode ? '☀️ Light' : '🌙 Dark'}
+          </button>
 
+          {/* Mobile hamburger toggle */}
+          <button
+            className="nav-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span className="hamburger-bar"></span>
+            <span className="hamburger-bar"></span>
+            <span className="hamburger-bar"></span>
+          </button>
+        </div>
+
+        {/* Navigation links using NavLink with end prop for exact home match */}
         <ul className={`nav-links ${mobileMenuOpen ? 'nav-links-open' : ''}`}>
-          {navLinks.map((item) => (
-            <li key={item.id} className="nav-item">
-              <a
-                href={`#${item.id}`}
-                className={`nav-link ${activeSection === item.id ? 'active' : ''}`}
-                onClick={() => handleLinkClick(item.id)}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
+          <li className="nav-item">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `nav-link ${isActive ? 'active' : ''}`
+              }
+              onClick={closeMobileMenu}
+            >
+              Home
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink
+              to="/projects"
+              className={({ isActive }) =>
+                `nav-link ${isActive ? 'active' : ''}`
+              }
+              onClick={closeMobileMenu}
+            >
+              Projects
+            </NavLink>
+          </li>
+          <li className="nav-item">
+            <NavLink
+              to="/contact"
+              className={({ isActive }) =>
+                `nav-link ${isActive ? 'active' : ''}`
+              }
+              onClick={closeMobileMenu}
+            >
+              Contact
+            </NavLink>
+          </li>
         </ul>
       </div>
     </nav>

@@ -1,18 +1,27 @@
-import Header from './components/Header';
+import { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
-import About from './components/About';
-import Skills from './components/Skills';
-import Projects from './components/Projects';
 import Footer from './components/Footer';
+import Home from './pages/Home';
+import ProjectsPage from './pages/ProjectsPage';
+import Contact from './pages/Contact';
+import NotFound from './pages/NotFound';
 import './App.css';
 
 function App() {
-  // 1. Portfolio owner information & theme configuration
+  // 1. Dark / Light mode state management
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDarkMode((prevMode) => !prevMode);
+  };
+
+  // 2. Portfolio owner information & theme configuration
   const ownerName = '24IT102';
   const ownerTitle = 'Undergraduate IT Student & Front-End Developer';
   const themeColor = '#1d4ed8'; // Coordinated deep royal blue
 
-  // 2. Student details passed to About component
+  // 3. Student details passed to About component
   const studentDetails = {
     education: 'B.Tech in Information Technology',
     college: 'CSPIT / DEPSTAR',
@@ -22,26 +31,27 @@ function App() {
     careerGoal: 'To build high-performance, accessible, and user-centric web applications using modern web ecosystems.',
   };
 
-  // 3. Skills array passed to Skills component via skillList prop
+  // 4. Skills array passed to Skills component via skillList prop
   const skills = [
     'HTML5 & Semantic Markup',
     'CSS3 & Modern Layouts (Flexbox/Grid)',
     'JavaScript (ES6+)',
     'React.js Fundamentals',
+    'React Router (SPA Navigation)',
+    'State Management (useState)',
     'Component Architecture & Props',
     'Vite Build Tool',
     'Git & GitHub Version Control',
-    'Responsive Web Design',
   ];
 
-  // 4. Exactly three academic projects passed to Projects component
+  // 5. Exactly three academic projects passed to Projects component
   const projects = [
     {
       id: 1,
       title: 'Student Portfolio Website',
       description:
-        'A single-page, component-based student portfolio built using React and Vite, featuring active navigation tracking and modular architecture.',
-      technologies: ['React', 'Vite', 'JSX', 'CSS3'],
+        'A single-page, multi-route student portfolio built using React, Vite, and React Router, featuring active navigation tracking and useState management.',
+      technologies: ['React', 'React Router', 'Vite', 'CSS3'],
     },
     {
       id: 2,
@@ -59,38 +69,51 @@ function App() {
     },
   ];
 
-  // 5. Contact information passed to Footer component
+  // 6. Contact information passed to Footer component
   const contactInfo = {
     email: '24it102@charusat.edu.in',
     location: 'Changa, Anand, Gujarat, India',
-    github: 'https://github.com',
+    github: 'https://github.com/khushalvadher0-hash/Portfolio-24it102',
     linkedin: 'https://linkedin.com',
   };
 
   return (
-    <div className="portfolio-app">
-      {/* Navigation bar with active section highlight */}
-      <NavBar />
+    <div className={`portfolio-app ${isDarkMode ? 'dark-mode' : ''}`}>
+      {/* Navigation bar with route links and dark/light mode toggle */}
+      <NavBar isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
 
-      {/* Hero Header with name, title, and themeColor passed as props */}
-      <Header
-        name={ownerName}
-        title={ownerTitle}
-        themeColor={themeColor}
-      />
+      {/* Main Content Area defining application routes */}
+      <main className="app-main-content">
+        <Routes>
+          {/* Route 1: Home page */}
+          <Route
+            path="/"
+            element={
+              <Home
+                ownerName={ownerName}
+                ownerTitle={ownerTitle}
+                themeColor={themeColor}
+                studentDetails={studentDetails}
+                skills={skills}
+              />
+            }
+          />
 
-      <main>
-        {/* About section receiving studentDetails prop */}
-        <About studentDetails={studentDetails} />
+          {/* Route 2: Projects page */}
+          <Route
+            path="/projects"
+            element={<ProjectsPage />}
+          />
 
-        {/* Skills section receiving skillList prop rendered dynamically */}
-        <Skills skillList={skills} />
+          {/* Route 3: Contact page with controlled form */}
+          <Route path="/contact" element={<Contact />} />
 
-        {/* Projects section receiving projectList prop with exactly 3 projects */}
-        <Projects projectList={projects} />
+          {/* Catch-all 404 Route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </main>
 
-      {/* Footer section receiving contactInfo and copyrightYear props */}
+      {/* Footer displayed across all routes */}
       <Footer contactInfo={contactInfo} copyrightYear={2026} />
     </div>
   );
