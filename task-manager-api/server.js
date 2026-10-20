@@ -8,6 +8,15 @@ const jwt = require('jsonwebtoken');
 const Task = require('./models/Task');
 const User = require('./models/User');
 const authMiddleware = require('./middleware/auth');
+const {
+    cache,
+    getTaskListKey,
+    getTaskSingleKey,
+    recordHit,
+    recordMiss,
+    invalidateUserTasks,
+    getStats
+} = require('./utils/cache');
 
 const app = express();
 
@@ -197,28 +206,71 @@ app.get('/me', authMiddleware, async (req, res, next) => {
 });
 
 // ------------------------------------------------------------
+// Cache Debug & Performance Monitoring Route (Practical 9)
+// ------------------------------------------------------------
+app.get('/cache/stats', (req, res) => {
+    res.status(200).json(getStats());
+});
+
+// ------------------------------------------------------------
 // Protected CRUD Routes for Tasks (Scoped to req.user.id)
 // ------------------------------------------------------------
 
-// 1. GET /tasks - Retrieve all tasks for the authenticated user
+// 1. GET /tasks - Retrieve all tasks for the authenticated user (Cached with node-cache)
 app.get('/tasks', authMiddleware, async (req, res, next) => {
     try {
+        const cacheKey = getTaskListKey(req.user.id);
+        const bypassCache = req.headers['x-bypass-cache'] === 'true';
+
+        // Check cache hit (unless explicitly bypassed via header for benchmarking)
+        if (!bypassCache && cache.has(cacheKey)) {
+            recordHit();
+            const cachedTasks = cache.get(cacheKey);
+            res.setHeader('X-Cache', 'HIT');
+            return res.status(200).json(cachedTasks);
+        }
+
+        // Cache miss: query MongoDB
+        recordMiss();
         const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
+
+        // Store in cache for 60 seconds (stdTTL)
+        cache.set(cacheKey, tasks);
+        res.setHeader('X-Cache', 'MISS');
+
         res.status(200).json(tasks);
     } catch (err) {
         next(err);
     }
 });
 
-// 2. GET /tasks/:id - Retrieve a single task by ID (only if owned by authenticated user)
+// 2. GET /tasks/:id - Retrieve a single task by ID (Cached with node-cache)
 app.get('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next) => {
     try {
+        const cacheKey = getTaskSingleKey(req.user.id, req.params.id);
+        const bypassCache = req.headers['x-bypass-cache'] === 'true';
+
+        // Check cache hit
+        if (!bypassCache && cache.has(cacheKey)) {
+            recordHit();
+            const cachedTask = cache.get(cacheKey);
+            res.setHeader('X-Cache', 'HIT');
+            return res.status(200).json(cachedTask);
+        }
+
+        // Cache miss: query MongoDB
+        recordMiss();
         const task = await Task.findOne({ _id: req.params.id, user: req.user.id });
         if (!task) {
             return res.status(404).json({
                 error: 'Task not found'
             });
         }
+
+        // Store in cache
+        cache.set(cacheKey, task);
+        res.setHeader('X-Cache', 'MISS');
+
         res.status(200).json(task);
     } catch (err) {
         next(err);
@@ -262,6 +314,9 @@ app.post('/tasks', authMiddleware, async (req, res, next) => {
             priority: priority || 'medium',
             user: req.user.id
         });
+
+        // Practical 9: Invalidate user's task list cache on successful write
+        invalidateUserTasks(req.user.id);
 
         res.status(201).json(newTask);
     } catch (err) {
@@ -327,6 +382,9 @@ app.put('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next) =
             });
         }
 
+        // Practical 9: Invalidate user's task list and individual task cache on successful write
+        invalidateUserTasks(req.user.id, req.params.id);
+
         res.status(200).json(updatedTask);
     } catch (err) {
         next(err);
@@ -346,6 +404,9 @@ app.delete('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next
                 error: 'Task not found'
             });
         }
+
+        // Practical 9: Invalidate user's task list and individual task cache on successful write
+        invalidateUserTasks(req.user.id, req.params.id);
 
         res.status(200).json({
             message: 'Task deleted successfully',
