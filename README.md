@@ -214,3 +214,61 @@ Optimize the front-end React portfolio application through route-based and compo
   - `TaskStatsModal-C_JyPv8e.js`: **3.28 kB** (Loaded on Analytics click)
 - Full quantitative report available at: [`docs/performance/PERFORMANCE_REPORT.md`](file:///c:/Users/ASUS/Desktop/Portfolio-24IT102/docs/performance/PERFORMANCE_REPORT.md).
 
+---
+
+# Practical 11: Containerization with Docker and Docker Compose
+
+**Subject:** Advanced Web Development Frameworks (ITUE301)  
+**Student ID:** 24IT102  
+**Frameworks:** Docker, Docker Compose, Node.js 18, React 19, MongoDB  
+**Date:** October 2026  
+
+### 1. Objective
+Containerize the multi-tier full-stack Task Management application (React Frontend, Express Backend, and MongoDB Database) and orchestrate all services using Docker Compose with single-command deployment (`docker-compose up`).
+
+### 2. Architecture & Orchestration
+```text
+docker-compose.yml
+├── mongodb   (mongo:6-jammy, port 27017, named volume: mongo-data)
+├── backend   (Node/Express API, port 5000, context: ./task-manager-api)
+└── frontend  (React/Vite multi-stage build, port 5173, context: .)
+
+Internal Network: app-network (bridge)
+Communication: frontend (browser) ──► backend (localhost:5000) ──► mongodb (mongodb:27017)
+```
+
+### 3. Key Docker Implementation Highlights
+- **Multi-Stage Build for React Frontend (`Dockerfile`)**:
+  - *Stage 1 (`build`)*: Compiles JSX and assets with Vite into `dist/`.
+  - *Stage 2 (`runtime`)*: Serves compiled static assets with Vite preview, drastically reducing container size by leaving dev dependencies behind.
+- **Backend Container (`task-manager-api/Dockerfile`)**:
+  - Lightweight Alpine Node 18 runtime.
+  - Layer-cached dependency installation (`COPY package*.json ./` followed by `RUN npm install`).
+- **Data Persistence**:
+  - Named Docker volume `mongo-data` mounted at `/data/db` ensuring database records survive container restarts and rebuilds.
+- **`.dockerignore` Optimization**:
+  - Excludes `node_modules`, `.env`, and build artifacts from both contexts to keep build contexts lightweight and fast.
+
+### 4. Single-Command Execution
+To build and launch the entire stack:
+```bash
+docker compose up --build
+```
+
+To stop all services and remove containers:
+```bash
+docker compose down
+```
+
+### 5. Viva & Key Analysis Questions
+
+1. **Why does the backend container reference MongoDB by service name (`mongodb:27017`) rather than `localhost`?**  
+   Inside Docker, each container has its own isolated network namespace and `localhost` (`127.0.0.1`) refers only to that specific container itself. Docker's internal DNS automatically resolves service names defined in `docker-compose.yml` (`mongodb`) to the container's internal IP address on the shared `app-network`.
+
+2. **What is the difference between `EXPOSE` in a Dockerfile and `ports` in `docker-compose.yml`?**  
+   `EXPOSE` is purely documentation/metadata indicating which port the process inside the container intends to listen on; it does **not** publish the port to the host machine. `ports: ["5000:5000"]` in `docker-compose.yml` publishes and binds the container port to the host machine's port, making it accessible from your host browser.
+
+3. **Why is it considered bad practice to copy `node_modules` into a Docker image instead of running `npm install` inside the container?**  
+   Local `node_modules` are built for the host machine's OS and CPU architecture (e.g., Windows x64 binaries like native bindings), which will break inside a Linux-based Docker container. Running `npm install` inside the image ensures that dependencies and native bindings are compiled correctly for the container's Linux environment while keeping the build context minimal.
+
+
