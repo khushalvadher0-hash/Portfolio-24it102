@@ -18,7 +18,12 @@ const {
     getStats
 } = require('./utils/cache');
 
+// Practical 10: Import shared EventEmitter and register listeners once at startup
+const taskEvents = require('./events');
+require('./listeners');
+
 const app = express();
+
 
 // Configure CORS for React frontend (allow Authorization header)
 app.use(cors({
@@ -318,7 +323,15 @@ app.post('/tasks', authMiddleware, async (req, res, next) => {
         // Practical 9: Invalidate user's task list cache on successful write
         invalidateUserTasks(req.user.id);
 
+        // Practical 10: Log API response timestamp and send HTTP 201 response first
+        const apiResponseTimestamp = new Date().toISOString();
+        console.log(`[API] Task created; response sent at: ${apiResponseTimestamp}`);
         res.status(201).json(newTask);
+
+        // Defer event emission using setImmediate to guarantee non-blocking response delivery
+        setImmediate(() => {
+            taskEvents.emit('task-created', newTask);
+        });
     } catch (err) {
         next(err);
     }
@@ -411,6 +424,11 @@ app.delete('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next
         res.status(200).json({
             message: 'Task deleted successfully',
             task: deletedTask
+        });
+
+        // Practical 10: Defer task-deleted event emission after response is returned
+        setImmediate(() => {
+            taskEvents.emit('task-deleted', deletedTask);
         });
     } catch (err) {
         next(err);
