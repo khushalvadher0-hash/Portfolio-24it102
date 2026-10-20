@@ -5,10 +5,10 @@ function ProjectsPage() {
     <div className="projects-page">
       <div className="page-header-banner">
         <div className="section-container">
-          <span className="page-badge">Practical 6 &bull; Full-Stack MERN Integration</span>
+          <span className="page-badge">Practical 7 &bull; JWT Authentication & Pipeline</span>
           <h1 className="page-main-title">Task Manager</h1>
           <p className="page-main-subtitle">
-            Manage real-time tasks persisted in MongoDB via our Node.js & Express REST API with full CRUD operations.
+            Secure task management protected by JWT authentication middleware and user-scoped data persistence in MongoDB.
           </p>
         </div>
       </div>

@@ -1,10 +1,30 @@
 import { useState, useEffect } from 'react';
-import { getTasks, createTask, updateTask, deleteTask } from '../api';
+import {
+  getTasks,
+  createTask,
+  updateTask,
+  deleteTask,
+  loginUser,
+  registerUser,
+  getMe,
+  logoutUser,
+  getToken
+} from '../api';
 import './TaskManager.css';
 
 function TaskManager() {
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [authError, setAuthError] = useState('');
+
+  // Tasks State
   const [tasks, setTasks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
   // Form State
@@ -38,8 +58,44 @@ function TaskManager() {
     }
   }, [toast]);
 
-  // Load tasks on mount
+  // Check current user session on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = getToken();
+      if (!token) {
+        setIsAuthLoading(false);
+        return;
+      }
+
+      try {
+        const user = await getMe();
+        setCurrentUser(user);
+      } catch (err) {
+        logoutUser();
+        setCurrentUser(null);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for unauthorized 401 events dispatched from API helper
+    const handleUnauthorized = () => {
+      setCurrentUser(null);
+      setTasks([]);
+      showToast('Session expired or invalid. Please log in again.', 'error');
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, []);
+
+  // Load tasks whenever currentUser becomes available
   const fetchTaskList = async () => {
+    if (!currentUser) return;
     setIsLoading(true);
     setErrorMessage('');
     try {
@@ -54,8 +110,56 @@ function TaskManager() {
   };
 
   useEffect(() => {
-    fetchTaskList();
-  }, []);
+    if (currentUser) {
+      fetchTaskList();
+    } else {
+      setTasks([]);
+    }
+  }, [currentUser]);
+
+  // Handle Authentication (Login / Register)
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (!authEmail.trim() || !authPassword.trim()) {
+      setAuthError('Email and password are required');
+      return;
+    }
+
+    setAuthSubmitting(true);
+    try {
+      if (authMode === 'login') {
+        const data = await loginUser(authEmail.trim(), authPassword);
+        setCurrentUser(data.user);
+        setAuthEmail('');
+        setAuthPassword('');
+        showToast(`Welcome back, ${data.user.email}!`, 'success');
+      } else {
+        // Register flow
+        await registerUser(authEmail.trim(), authPassword);
+        showToast('Registration successful! Logging you in...', 'success');
+        // Auto-login after registration
+        const data = await loginUser(authEmail.trim(), authPassword);
+        setCurrentUser(data.user);
+        setAuthEmail('');
+        setAuthPassword('');
+      }
+    } catch (err) {
+      setAuthError(err.message || 'Authentication failed');
+      showToast(err.message || 'Authentication failed', 'error');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  // Handle Logout
+  const handleLogout = () => {
+    logoutUser();
+    setCurrentUser(null);
+    setTasks([]);
+    showToast('Logged out successfully', 'success');
+  };
 
   // Handle Create Task with Optimistic UI
   const handleCreateTask = async (e) => {
@@ -200,6 +304,17 @@ function TaskManager() {
     }
   };
 
+  if (isAuthLoading) {
+    return (
+      <div className="task-manager-container auth-loading-box">
+        <div className="spinner-center">
+          <div className="loading-spinner" aria-label="Checking authentication session"></div>
+          <p className="loading-text">Verifying authentication session...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="task-manager-container">
       {/* Toast Notification Banner */}
@@ -217,8 +332,161 @@ function TaskManager() {
         </div>
       )}
 
-      {/* Form: Add New Task */}
-      <section className="task-form-card" aria-labelledby="form-heading">
+      {/* When NOT Logged In: Registration & Login Form Card */}
+      {!currentUser ? (
+        <section className="auth-card" aria-labelledby="auth-heading">
+          <div className="auth-card-header">
+            <span className="auth-badge">Practical 7 &bull; JWT Authentication</span>
+            <h2 id="auth-heading" className="auth-title">
+              {authMode === 'login' ? 'Sign In to Your Tasks' : 'Create an Account'}
+            </h2>
+            <p className="auth-subtitle">
+              {authMode === 'login'
+                ? 'Access your private, user-scoped tasks protected by JWT middleware.'
+                : 'Register with your email and password to start managing tasks.'}
+            </p>
+          </div>
+
+          <div className="auth-tabs" role="tablist">
+            <button
+              type="button"
+              className={`auth-tab-btn ${authMode === 'login' ? 'active' : ''}`}
+              onClick={() => {
+                setAuthMode('login');
+                setAuthError('');
+              }}
+              role="tab"
+              aria-selected={authMode === 'login'}
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              className={`auth-tab-btn ${authMode === 'register' ? 'active' : ''}`}
+              onClick={() => {
+                setAuthMode('register');
+                setAuthError('');
+              }}
+              role="tab"
+              aria-selected={authMode === 'register'}
+            >
+              Register
+            </button>
+          </div>
+
+          {authError && (
+            <div className="auth-error-banner" role="alert">
+              <span className="auth-error-icon">⚠️</span>
+              <span>{authError}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleAuthSubmit} className="auth-form">
+            <div className="form-group">
+              <label htmlFor="auth-email" className="form-label">
+                Email Address <span className="required-star">*</span>
+              </label>
+              <input
+                id="auth-email"
+                type="email"
+                className="form-input"
+                placeholder="e.g., student24it102@charusat.edu.in"
+                value={authEmail}
+                onChange={(e) => setAuthEmail(e.target.value)}
+                disabled={authSubmitting}
+                required
+                autoComplete="email"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="auth-password" className="form-label">
+                Password <span className="required-star">*</span>
+              </label>
+              <input
+                id="auth-password"
+                type="password"
+                className="form-input"
+                placeholder="At least 6 characters"
+                value={authPassword}
+                onChange={(e) => setAuthPassword(e.target.value)}
+                disabled={authSubmitting}
+                required
+                autoComplete={authMode === 'login' ? 'current-password' : 'new-password'}
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="btn btn-submit-auth"
+              disabled={authSubmitting}
+            >
+              {authSubmitting
+                ? 'Processing...'
+                : authMode === 'login'
+                ? 'Sign In with JWT'
+                : 'Create Account & Sign In'}
+            </button>
+          </form>
+
+          <div className="auth-footer-prompt">
+            {authMode === 'login' ? (
+              <p>
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  className="auth-switch-link"
+                  onClick={() => {
+                    setAuthMode('register');
+                    setAuthError('');
+                  }}
+                >
+                  Register here
+                </button>
+              </p>
+            ) : (
+              <p>
+                Already have an account?{' '}
+                <button
+                  type="button"
+                  className="auth-switch-link"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setAuthError('');
+                  }}
+                >
+                  Log in here
+                </button>
+              </p>
+            )}
+          </div>
+        </section>
+      ) : (
+        <>
+          {/* Authenticated User Status Bar */}
+          <div className="user-session-bar">
+            <div className="user-session-info">
+              <span className="user-avatar-badge">👤</span>
+              <div>
+                <span className="user-session-label">Authenticated As</span>
+                <span className="user-session-email">{currentUser.email}</span>
+              </div>
+            </div>
+            <div className="user-session-actions">
+              <span className="jwt-badge-tag">🔒 JWT Active</span>
+              <button
+                type="button"
+                className="btn btn-logout"
+                onClick={handleLogout}
+                title="Log out of session"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+
+          {/* Form: Add New Task */}
+          <section className="task-form-card" aria-labelledby="form-heading">
         <h2 id="form-heading" className="task-form-title">
           Create New Task
         </h2>
@@ -481,6 +749,8 @@ function TaskManager() {
             );
           })}
         </div>
+      )}
+        </>
       )}
     </div>
   );

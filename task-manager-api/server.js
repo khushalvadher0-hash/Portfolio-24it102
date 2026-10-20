@@ -2,18 +2,24 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+
 const Task = require('./models/Task');
+const User = require('./models/User');
+const authMiddleware = require('./middleware/auth');
 
 const app = express();
 
-// Configure CORS for React frontend
+// Configure CORS for React frontend (allow Authorization header)
 app.use(cors({
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type']
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Middleware: Parse JSON request body
 app.use(express.json());
@@ -25,7 +31,7 @@ app.use((req, res, next) => {
 });
 
 // Middleware: Validate JSON Content-Type for POST and PUT
-app.use('/tasks', (req, res, next) => {
+app.use(['/tasks', '/register', '/login'], (req, res, next) => {
     if (['POST', 'PUT'].includes(req.method) && !req.is('application/json')) {
         return res.status(400).json({
             error: 'Content-Type must be application/json'
@@ -34,7 +40,7 @@ app.use('/tasks', (req, res, next) => {
     next();
 });
 
-// Helper middleware: Validate MongoDO ObjectId
+// Helper middleware: Validate MongoDB ObjectId
 function validateObjectId(req, res, next) {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -46,23 +52,168 @@ function validateObjectId(req, res, next) {
 }
 
 // ------------------------------------------------------------
-// CRUD Routes using Mongoose
-// -----------------------------------------------------------
+// Authentication Routes (Practical 7)
+// ------------------------------------------------------------
 
-// 1. GET /tasks - Retrieve all tasks
-app.get('/tasks', async (req, res, next) => {
+// Helper for email regex validation
+const EMAIL_REGEX = /^\S+@\S+\.\S+$/;
+
+// 1. POST /register - Register a new user
+app.post('/register', async (req, res, next) => {
     try {
-        const tasks = await Task.find();
+        const { email, password } = req.body || {};
+
+        if (!email || typeof email !== 'string' || !email.trim()) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: ['Email is required and must be a valid email string']
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        if (!EMAIL_REGEX.test(normalizedEmail)) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: ['Please provide a valid email address']
+            });
+        }
+
+        if (!password || typeof password !== 'string' || password.length < 6) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: ['Password is required and must be at least 6 characters long']
+            });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser) {
+            return res.status(409).json({
+                error: 'A user with this email already exists'
+            });
+        }
+
+        // Hash password with bcryptjs (10 salt rounds)
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        const newUser = await User.create({
+            email: normalizedEmail,
+            password: hashedPassword
+        });
+
+        // Return HTTP 201 without returning password hash
+        res.status(201).json({
+            message: 'User registered successfully',
+            user: {
+                id: newUser._id,
+                email: newUser.email,
+                createdAt: newUser.createdAt
+            }
+        });
+    } catch (err) {
+        if (err.code === 11000) {
+            return res.status(409).json({
+                error: 'A user with this email already exists'
+            });
+        }
+        next(err);
+    }
+});
+
+// 2. POST /login - Authenticate user and issue JWT
+app.post('/login', async (req, res, next) => {
+    try {
+        const { email, password } = req.body || {};
+
+        if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+            return res.status(400).json({
+                error: 'Email and password are required'
+            });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await User.findOne({ email: normalizedEmail });
+
+        if (!user) {
+            // Never reveal whether user exists or password was wrong
+            return res.status(401).json({
+                error: 'Invalid email or password'
+            });
+        }
+
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({
+                error: 'Invalid email or password'
+            });
+        }
+
+        if (!JWT_SECRET) {
+            console.error('FATAL ERROR: JWT_SECRET is not configured.');
+            return res.status(500).json({
+                error: 'Server configuration error'
+            });
+        }
+
+        // Generate JWT token with 1h expiration
+        const token = jwt.sign(
+            { userId: user._id, email: user.email },
+            JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            user: {
+                id: user._id,
+                email: user.email
+            }
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// 3. GET /me - Return authenticated user's ID and email
+app.get('/me', authMiddleware, async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({
+                error: 'User not found'
+            });
+        }
+
+        res.status(200).json({
+            id: user._id,
+            email: user.email,
+            createdAt: user.createdAt
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// ------------------------------------------------------------
+// Protected CRUD Routes for Tasks (Scoped to req.user.id)
+// ------------------------------------------------------------
+
+// 1. GET /tasks - Retrieve all tasks for the authenticated user
+app.get('/tasks', authMiddleware, async (req, res, next) => {
+    try {
+        const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
         res.status(200).json(tasks);
     } catch (err) {
         next(err);
     }
 });
 
-// 2. GET /tasks/:id - Retrieve a single task by ID
-app.get('/tasks/:id', validateObjectId, async (req, res, next) => {
+// 2. GET /tasks/:id - Retrieve a single task by ID (only if owned by authenticated user)
+app.get('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next) => {
     try {
-        const task = await Task.findById(req.params.id);
+        const task = await Task.findOne({ _id: req.params.id, user: req.user.id });
         if (!task) {
             return res.status(404).json({
                 error: 'Task not found'
@@ -74,19 +225,20 @@ app.get('/tasks/:id', validateObjectId, async (req, res, next) => {
     }
 });
 
-// 3. POST /tasks - Create a new task
-app.post('/tasks', async (req, res, next) => {
+// 3. POST /tasks - Create a new task owned by the authenticated user
+app.post('/tasks', authMiddleware, async (req, res, next) => {
     try {
         const { title, description, completed, priority } = req.body || {};
 
-        // Explicit validation checks for beginner clarity
-        if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
+        // Validation for title
+        if (title === undefined || typeof title !== 'string' || !title.trim()) {
             return res.status(400).json({
                 error: 'Validation failed',
                 details: ['Title is required and must be a non-empty string']
             });
         }
 
+        // Validation for completed
         if (completed !== undefined && typeof completed !== 'boolean') {
             return res.status(400).json({
                 error: 'Validation failed',
@@ -94,12 +246,21 @@ app.post('/tasks', async (req, res, next) => {
             });
         }
 
+        // Validation for priority
+        const validPriorities = ['low', 'medium', 'high'];
+        if (priority !== undefined && !validPriorities.includes(priority)) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: ['Priority must be either low, medium, or high']
+            });
+        }
 
         const newTask = await Task.create({
-            title,
-            description,
-            completed,
-            priority
+            title: title.trim(),
+            description: typeof description === 'string' ? description.trim() : '',
+            completed: Boolean(completed),
+            priority: priority || 'medium',
+            user: req.user.id
         });
 
         res.status(201).json(newTask);
@@ -108,8 +269,8 @@ app.post('/tasks', async (req, res, next) => {
     }
 });
 
-// 4. PUT /tasks/:id - Update an existing task
-app.put('/tasks/:id', validateObjectId, async (req, res, next) => {
+// 4. PUT /tasks/:id - Update an existing task (only if owned by authenticated user)
+app.put('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next) => {
     try {
         const { title, description, completed, priority } = req.body || {};
 
@@ -123,7 +284,6 @@ app.put('/tasks/:id', validateObjectId, async (req, res, next) => {
                 error: 'Please provide at least one field to update (title, description, completed, priority)'
             });
         }
-
 
         if (title !== undefined && (typeof title !== 'string' || !title.trim())) {
             return res.status(400).json({
@@ -139,11 +299,19 @@ app.put('/tasks/:id', validateObjectId, async (req, res, next) => {
             });
         }
 
-        const updatedTask = await Task.findByIdAndUpdate(
-            req.params.id,
+        const validPriorities = ['low', 'medium', 'high'];
+        if (priority !== undefined && !validPriorities.includes(priority)) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: ['Priority must be either low, medium, or high']
+            });
+        }
+
+        const updatedTask = await Task.findOneAndUpdate(
+            { _id: req.params.id, user: req.user.id },
             {
                 ...(title !== undefined && { title: title.trim() }),
-                ...(description !== undefined && { description }),
+                ...(description !== undefined && { description: typeof description === 'string' ? description.trim() : description }),
                 ...(completed !== undefined && { completed }),
                 ...(priority !== undefined && { priority })
             },
@@ -165,10 +333,14 @@ app.put('/tasks/:id', validateObjectId, async (req, res, next) => {
     }
 });
 
-// 5. DELETE /tasks/:id - Delete a task
-app.delete('/tasks/:id', validateObjectId, async (req, res, next) => {
+// 5. DELETE /tasks/:id - Delete a task (only if owned by authenticated user)
+app.delete('/tasks/:id', authMiddleware, validateObjectId, async (req, res, next) => {
     try {
-        const deletedTask = await Task.findByIdAndDelete(req.params.id);
+        const deletedTask = await Task.findOneAndDelete({
+            _id: req.params.id,
+            user: req.user.id
+        });
+
         if (!deletedTask) {
             return res.status(404).json({
                 error: 'Task not found'

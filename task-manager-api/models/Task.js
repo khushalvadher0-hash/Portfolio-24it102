@@ -27,6 +27,11 @@ const taskSchema = new mongoose.Schema(
                 message: "Priority must be either low, medium, or high"
             },
             default: "medium"
+        },
+        user: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
+            required: [true, 'Task must belong to a user']
         }
     },
     {

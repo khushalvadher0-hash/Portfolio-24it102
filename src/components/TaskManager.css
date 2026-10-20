@@ -7,6 +7,237 @@
   padding: 0 1rem 3rem 1rem;
 }
 
+/* Authentication Container & Card (Practical 7) */
+.auth-loading-box {
+  padding: 4rem 1rem;
+  text-align: center;
+}
+
+.auth-card {
+  max-width: 480px;
+  margin: 2rem auto;
+  padding: 2.25rem 2rem;
+  background-color: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 14px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+}
+
+.auth-card-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.75rem;
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+  border-radius: 9999px;
+  margin-bottom: 0.75rem;
+}
+
+.auth-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+  margin-bottom: 0.4rem;
+}
+
+.auth-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.4;
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--bg-secondary, #f1f5f9);
+  border-radius: 8px;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-tab-btn {
+  flex: 1;
+  padding: 0.6rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.auth-tab-btn.active {
+  background: #ffffff;
+  color: #2563eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.dark-mode .auth-tab-btn.active {
+  background: #1e293b;
+  color: #60a5fa;
+}
+
+.auth-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  margin-bottom: 1.25rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.btn-submit-auth {
+  background: #2563eb;
+  color: #ffffff;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 0.5rem;
+}
+
+.btn-submit-auth:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.btn-submit-auth:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-footer-prompt {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #64748b);
+}
+
+.auth-switch-link {
+  background: none;
+  border: none;
+  color: #2563eb;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+
+/* User Session Bar */
+.user-session-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.user-session-info {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.user-avatar-badge {
+  font-size: 1.6rem;
+}
+
+.user-session-label {
+  display: block;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+}
+
+.user-session-email {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary, #0f172a);
+}
+
+.user-session-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.jwt-badge-tag {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.btn-logout {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid #ef4444;
+  color: #ef4444;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-logout:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Dark mode overrides for auth */
+.dark-mode .auth-card,
+.dark-mode .user-session-bar {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.dark-mode .auth-title,
+.dark-mode .user-session-email {
+  color: #f8fafc;
+}
+
+.dark-mode .auth-tabs {
+  background: #0f172a;
+}
+
+.dark-mode .jwt-badge-tag {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: #059669;
+}
+
 /* Toast Notification */
 .toast-notification {
   position: fixed;
