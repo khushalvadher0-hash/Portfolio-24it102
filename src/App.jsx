@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Footer from './components/Footer';
 import Home from './pages/Home';
-import ProjectsPage from './pages/ProjectsPage';
-import Contact from './pages/Contact';
 import NotFound from './pages/NotFound';
+import PageLoader from './components/PageLoader';
 import './App.css';
+
+// Practical 8: Route-based code splitting using React.lazy() and dynamic imports
+const ProjectsPage = lazy(() => import('./pages/ProjectsPage'));
+const Contact = lazy(() => import('./pages/Contact'));
+
 
 function App() {
   // 1. Dark / Light mode state management
@@ -82,35 +86,37 @@ function App() {
       {/* Navigation bar with route links and dark/light mode toggle */}
       <NavBar isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
 
-      {/* Main Content Area defining application routes */}
+      {/* Main Content Area defining application routes with Suspense fallback */}
       <main className="app-main-content">
-        <Routes>
-          {/* Route 1: Home page */}
-          <Route
-            path="/"
-            element={
-              <Home
-                ownerName={ownerName}
-                ownerTitle={ownerTitle}
-                themeColor={themeColor}
-                studentDetails={studentDetails}
-                skills={skills}
-              />
-            }
-          />
+        <Suspense fallback={<PageLoader message="Loading page..." />}>
+          <Routes>
+            {/* Route 1: Home page (Eagerly loaded) */}
+            <Route
+              path="/"
+              element={
+                <Home
+                  ownerName={ownerName}
+                  ownerTitle={ownerTitle}
+                  themeColor={themeColor}
+                  studentDetails={studentDetails}
+                  skills={skills}
+                />
+              }
+            />
 
-          {/* Route 2: Projects page */}
-          <Route
-            path="/projects"
-            element={<ProjectsPage />}
-          />
+            {/* Route 2: Projects page (Lazy loaded) */}
+            <Route
+              path="/projects"
+              element={<ProjectsPage />}
+            />
 
-          {/* Route 3: Contact page with controlled form */}
-          <Route path="/contact" element={<Contact />} />
+            {/* Route 3: Contact page with controlled form (Lazy loaded) */}
+            <Route path="/contact" element={<Contact />} />
 
-          {/* Catch-all 404 Route */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* Catch-all 404 Route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </main>
 
       {/* Footer displayed across all routes */}

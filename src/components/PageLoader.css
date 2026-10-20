@@ -1,0 +1,45 @@
+/* PageLoader Fallback Styles - Practical 8 */
+.page-loader-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 3rem 1rem;
+  gap: 1.25rem;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.page-loader-spinner {
+  width: 52px;
+  height: 52px;
+  border: 4px solid var(--border-color, #e2e8f0);
+  border-top-color: var(--primary-color, #2563eb);
+  border-radius: 50%;
+  animation: pageLoaderSpin 0.75s linear infinite;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+}
+
+.page-loader-message {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-secondary, #475569);
+  letter-spacing: 0.01em;
+}
+
+@keyframes pageLoaderSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

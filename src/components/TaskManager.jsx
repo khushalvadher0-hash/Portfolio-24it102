@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import {
   getTasks,
   createTask,
@@ -11,6 +11,10 @@ import {
   getToken
 } from '../api';
 import './TaskManager.css';
+
+// Practical 8: Lazy load the optional TaskStatsModal component on demand
+const TaskStatsModal = lazy(() => import('./TaskStatsModal'));
+
 
 function TaskManager() {
   // Authentication State
@@ -42,8 +46,12 @@ function TaskManager() {
   // Operation In-Progress tracking for specific task IDs (to disable buttons)
   const [activeActionId, setActiveActionId] = useState(null);
 
+  // Practical 8: State to conditionally render lazy-loaded TaskStatsModal
+  const [showStatsModal, setShowStatsModal] = useState(false);
+
   // Toast Notification state
   const [toast, setToast] = useState(null);
+
 
   const showToast = (message, type = 'success') => {
     setToast({ message, type });
@@ -559,14 +567,24 @@ function TaskManager() {
           <h2 className="section-title">All Tasks ({tasks.length})</h2>
           <span className="database-indicator">Connected to MongoDB</span>
         </div>
-        <button
-          type="button"
-          onClick={fetchTaskList}
-          className="btn btn-secondary reload-btn"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Refreshing...' : '&#x21bb; Refresh Tasks'}
-        </button>
+        <div className="task-header-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            type="button"
+            onClick={() => setShowStatsModal(true)}
+            className="btn btn-secondary stats-btn"
+            title="Open task analytics and performance metrics"
+          >
+            📊 View Analytics
+          </button>
+          <button
+            type="button"
+            onClick={fetchTaskList}
+            className="btn btn-secondary reload-btn"
+            disabled={isLoading}
+          >
+            {isLoading ? 'Refreshing...' : '&#x21bb; Refresh Tasks'}
+          </button>
+        </div>
       </div>
 
       {/* Error state */}
@@ -751,6 +769,13 @@ function TaskManager() {
         </div>
       )}
         </>
+      )}
+
+      {/* Practical 8: Lazy loaded TaskStatsModal on demand */}
+      {showStatsModal && (
+        <Suspense fallback={<div className="modal-suspense-fallback">Loading Analytics...</div>}>
+          <TaskStatsModal tasks={tasks} onClose={() => setShowStatsModal(false)} />
+        </Suspense>
       )}
     </div>
   );

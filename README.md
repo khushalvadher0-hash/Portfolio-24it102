@@ -178,3 +178,39 @@ Each card displays:
 - **`async/await`**: Syntactic sugar over Promises allowing asynchronous code to be written and read like synchronous code.
 - **`try/catch/finally`**: Exception handling construct. Code in `try` executes; errors jump to `catch`; and `finally` runs unconditionally to clean up resources or reset `loading` states.
 - **`.map()`**: Standard JavaScript array method used to transform array items into JSX elements dynamically in React, requiring a unique `key` prop on the top-level element.
+
+---
+
+# Practical 8: Performance Optimization and Lazy Loading in React
+
+**Subject:** Advanced Web Development Frameworks (ITUE301)  
+**Student ID:** 24IT102  
+
+### 1. Objective
+Optimize the front-end React portfolio application through route-based and component-level code splitting using `React.lazy()` and `Suspense`, reducing the initial JavaScript payload and deferring secondary chunks until needed.
+
+### 2. Theory & Mechanics
+- **Code Splitting**: Breaking a single monolithic production bundle into smaller discrete bundles ("chunks") downloaded asynchronously on demand.
+- **`React.lazy()`**: Takes a function that returns a dynamic `import()` Promise and renders a lazy component like a regular component.
+- **`Suspense`**: Renders a fallback UI (e.g. `PageLoader.jsx`) while lazy-loaded children are downloading over the network.
+
+### 3. Implementation Summary
+- **Route-Level Splitting in `src/App.jsx`**:
+  - `ProjectsPage` (`/projects`) and `Contact` (`/contact`) are loaded lazily.
+  - `Home` (`/`) remains eagerly loaded for fast first-page load.
+  - Wrapped inside `<Suspense fallback={<PageLoader message="Loading page..." />}>`.
+- **Component-Level Lazy Loading in `src/components/TaskManager.jsx`**:
+  - `TaskStatsModal.jsx` is dynamically imported and mounted on demand when the user clicks "📊 View Analytics".
+- **Accessible Fallback (`src/components/PageLoader.jsx`)**:
+  - Custom spinner with `role="status"` and accessible label.
+
+### 4. Build & Performance Results
+- **Before Optimization (Single Bundle)**:
+  - `dist/assets/index-BPgpR-SV.js`: **287.44 kB**
+- **After Optimization (Code-Split Chunks)**:
+  - Initial `index-C1-izUc3.js`: **268.07 kB** (-19.37 kB on first load)
+  - `ProjectsPage-DvrvxenN.js`: **17.45 kB** (Loaded on `/projects`)
+  - `Contact-BaQwQTH3.js`: **3.49 kB** (Loaded on `/contact`)
+  - `TaskStatsModal-C_JyPv8e.js`: **3.28 kB** (Loaded on Analytics click)
+- Full quantitative report available at: [`docs/performance/PERFORMANCE_REPORT.md`](file:///c:/Users/ASUS/Desktop/Portfolio-24IT102/docs/performance/PERFORMANCE_REPORT.md).
+
